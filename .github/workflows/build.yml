@@ -1,0 +1,23 @@
+name: Build HomeFocus Windows
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build release package
+        shell: pwsh
+        run: ./tools/Build-Release.ps1 -Version 1.0.0 -Owner "${{ github.repository_owner }}" -Repo "${{ github.event.repository.name }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HomeFocus-Windows
+          path: HomeFocus-Windows-1.0.0.zip
