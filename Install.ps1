@@ -40,13 +40,19 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "Could not secure the HomeFocus data directory (icacls exit $LASTEXITCODE)." }
 
   $agent = Join-Path $install "HomeFocus.Agent.exe"
-  $createResult = & schtasks.exe /Create /TN "HomeFocus Agent" /SC ONSTART /RU SYSTEM /RL HIGHEST /TR ('"{0}"' -f $agent) /F 2>&1
-  if ($LASTEXITCODE -ne 0) { throw "Unable to register HomeFocus Agent task: $createResult" }
-  Write-InstallLog "Created startup task: $createResult"
+  if (-not (Test-Path -LiteralPath $agent)) { throw "Agent executable missing: $agent" }
 
-  $runResult = & schtasks.exe /Run /TN "HomeFocus Agent" 2>&1
-  if ($LASTEXITCODE -ne 0) { throw "Unable to start HomeFocus Agent: $runResult" }
-  Write-InstallLog "Requested agent startup: $runResult"
+  # Use Windows ScheduledTasks' structured Execute field. schtasks.exe /TR
+  # can mishandle quoting a path inside Program Files (0x80070002).
+  $taskAction = New-ScheduledTaskAction -Execute $agent -WorkingDirectory $install
+  $taskTrigger = New-ScheduledTaskTrigger -AtStartup
+  $taskPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+  $taskSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
+  Register-ScheduledTask -TaskName "HomeFocus Agent" -Action $taskAction -Trigger $taskTrigger -Principal $taskPrincipal -Settings $taskSettings -Force | Out-Null
+  $savedTask = Get-ScheduledTask -TaskName "HomeFocus Agent"
+  Write-InstallLog ("Registered startup task. Action Execute: " + $savedTask.Actions[0].Execute)
+  Start-ScheduledTask -TaskName "HomeFocus Agent" -ErrorAction Stop
+  Write-InstallLog "Requested agent startup."
 
   $runKey = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
   New-ItemProperty -Path $runKey -Name "HomeFocus" -Value ('"{0}"' -f (Join-Path $install "HomeFocus.exe")) -PropertyType String -Force | Out-Null
@@ -71,6 +77,8 @@ try {
     if (Test-Path $agentLog) {
       Write-InstallLog ("Recent agent log: " + ((Get-Content $agentLog -Tail 12) -join " | "))
     }
+    $taskInfo = Get-ScheduledTaskInfo -TaskName "HomeFocus Agent" -ErrorAction SilentlyContinue
+    if ($taskInfo) { Write-InstallLog "Task LastTaskResult: $($taskInfo.LastTaskResult)" }
     throw "HomeFocus Agent did not respond on localhost:48191 after installation. See $logPath."
   }
   Write-InstallLog "HomeFocus Agent is responding on port 48191."
