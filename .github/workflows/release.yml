@@ -20,10 +20,20 @@ jobs:
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
           ./tools/Build-Release.ps1 -Version $version -Owner "${{ github.repository_owner }}" -Repo "${{ github.event.repository.name }}"
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          ./tools/Build-Installer.ps1 -Version $version
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          files: HomeFocus-Windows-*.zip
+          files: |
+            HomeFocus-Windows-*.zip
+            HomeFocus-Setup-*.exe
           generate_release_notes: true
       - name: Publish update manifest to main
         shell: pwsh

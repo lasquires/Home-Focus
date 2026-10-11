@@ -1,8 +1,8 @@
-# HomeFocus for Windows 1.0
+# HomeFocus for Windows
 
 HomeFocus for Windows is a parent-controlled **default-deny internet access system** designed around earned access rather than a simple website blacklist.
 
-It is intended for a dedicated child Windows 11 PC or a machine where the parent understands that enabling HomeFocus affects networking for the whole computer.
+It is intended for a dedicated child Windows 10/11 PC or a machine where the parent understands that enabling HomeFocus affects networking for the whole computer. **On new installations, filtering initially starts OFF** until a parent creates a PIN, reviews the whitelist, and enables it. Upgrading preserves existing settings.
 
 ## What this build does
 
@@ -71,16 +71,9 @@ Included task types:
 
 The parent chooses the number of required clicks. Default examples use 100. Completion grants the configured reward for the configured number of minutes.
 
-#### Mindful / Scripture typing
+#### Scripture Passages / typing
 
-The parent creates named passage collections such as:
-
-- Scripture Mastery
-- Alma
-- Book of Mormon
-- Vocabulary
-- School spelling
-- Custom passages
+The built-in **Scripture Passages** task includes selections from **both the Bible and the Book of Mormon**. Parents can edit or replace the selections and add custom passage collections for scripture mastery, spelling, vocabulary, and other practice.
 
 A typing task specifies how many passages are required. HomeFocus randomly selects distinct passages each attempt. The child does not choose them.
 
@@ -115,7 +108,7 @@ Parent Settings requires the PIN. Child task completion never grants administrat
 
 The HomeFocus UI is registered to run at interactive logon and configures that Windows user's WinINET proxy to the local HomeFocus proxy.
 
-The enforcement posture is intentionally **fail-closed**. If HomeFocus was enabled and the UI closes, the firewall remains locked. If the UI stops, direct internet remains blocked. This is why the repository includes `Emergency-Unlock.ps1` for an administrator.
+The enforcement posture is intentionally **fail-closed after filtering has been enabled**. On a new install, filtering starts off. If it was enabled and the UI closes, the firewall remains locked. If the UI stops, direct internet remains blocked. This is why the repository includes `Emergency-Unlock.ps1` for an administrator.
 
 ## GitHub updates
 
@@ -142,13 +135,23 @@ The intended publishing workflow is:
 
 For a public repository this needs no GitHub token. Private-repository update authentication is intentionally not implemented in 1.0 because storing a reusable GitHub credential on the child PC would create another security problem.
 
-## Build
+## Easy Windows installer
+
+1. Visit [GitHub Releases](https://github.com/lasquires/Home-Focus/releases) and download the latest **HomeFocus-Setup-VERSION.exe**.
+2. Double-click the installer, approve Windows administrator access, and follow the wizard.
+3. Launch HomeFocus and choose a parent PIN. Review the Bible and Book of Mormon examples in **Parent Settings > Passages** and change any passages you like.
+4. Enable internet filtering in Parent Settings when ready. **Filtering affects the entire PC**, not just YouTube or a single browser.
+
+The installer bundles the .NET application: you do **not** need to install the .NET SDK, build source code, or use PowerShell. The current installer is unsigned, so Windows may show a publisher warning. To uninstall, use Windows **Settings > Apps > HomeFocus**. If necessary, see the emergency unlock instructions below.
+
+## Build (for developers only)
 
 Requirements:
 
-- Windows 11 recommended
+- Windows 10/11 x64 (Windows 11 recommended)
 - .NET 8 SDK
 - PowerShell 5.1+
+- Inno Setup 6 for building the graphical installer
 - Administrator access for installation
 
 From PowerShell:
@@ -165,7 +168,7 @@ This publishes self-contained single-file executables into `dist/`:
 
 and creates `HomeFocus-Windows-1.0.0.zip` plus `update-manifest.json`.
 
-Then install:
+To create the graphical installer after building, run `./tools/Build-Installer.ps1 -Version 1.0.1`. Manual PowerShell installation (without the graphical installer) remains available:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass

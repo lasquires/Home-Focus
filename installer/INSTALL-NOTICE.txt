@@ -1,0 +1,12 @@
+HomeFocus is a parent-controlled internet-access application for a dedicated child computer.
+
+Before enabling filtering:
+- Set and save your parent PIN in HomeFocus.
+- Review the always-allowed websites and reward tasks.
+- Keep access to a separate Windows administrator account.
+
+On a new install, filtering starts OFF. When you turn it on, it changes Windows Firewall outbound policy for the ENTIRE computer, so other accounts and apps may temporarily lose network access.
+
+The app can be uninstalled through Settings > Apps. An administrator can also run Emergency-Unlock.ps1 in the HomeFocus installation folder if recovery is needed.
+
+HomeFocus is not code-signed. Only install a build you trust from this repository.

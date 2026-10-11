@@ -16,3 +16,6 @@ HomeFocus-Windows-*.zip
 # OS/editor noise
 Thumbs.db
 .DS_Store
+
+# Compiled graphical installers
+HomeFocus-Setup-*.exe

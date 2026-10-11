@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,10 +15,22 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build release package
+      - name: Build self-contained binaries
         shell: pwsh
-        run: ./tools/Build-Release.ps1 -Version 1.0.0 -Owner "${{ github.repository_owner }}" -Repo "${{ github.event.repository.name }}"
+        run: ./tools/Build-Release.ps1 -Version 1.0.1 -Owner "${{ github.repository_owner }}" -Repo "${{ github.event.repository.name }}"
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
+      - name: Build Windows installer
+        shell: pwsh
+        run: ./tools/Build-Installer.ps1 -Version 1.0.1
       - uses: actions/upload-artifact@v4
         with:
-          name: HomeFocus-Windows
-          path: HomeFocus-Windows-1.0.0.zip
+          name: HomeFocus-Setup-Windows
+          path: HomeFocus-Setup-*.exe
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HomeFocus-Update-Package
+          path: HomeFocus-Windows-*.zip
+          if-no-files-found: error

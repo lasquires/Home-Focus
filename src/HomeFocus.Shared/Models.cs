@@ -10,7 +10,7 @@ public enum TaskKind { Ice, Typing }
 public sealed class HomeFocusConfig
 {
     public int SchemaVersion { get; set; } = 1;
-    public bool Enabled { get; set; } = true;
+    public bool Enabled { get; set; } = false;
     public string ParentPinSalt { get; set; } = "";
     public string ParentPinHash { get; set; } = "";
     public List<string> AlwaysAllowedDomains { get; set; } = new();
@@ -22,7 +22,7 @@ public sealed class HomeFocusConfig
 
     public static HomeFocusConfig CreateDefault() => new()
     {
-        Enabled = true,
+        Enabled = false,
         AlwaysAllowedDomains = new List<string>
         {
             "login.microsoftonline.com"
@@ -51,10 +51,14 @@ public sealed class HomeFocusConfig
             },
             new() {
                 Id = "scripture",
-                Name = "Scripture Mastery",
+                Name = "Scripture Passages",
                 Passages = new List<string> {
-                    "Add your own scripture mastery passages in Parent Settings.",
-                    "Each passage is chosen randomly from the collection you create."
+                    "John 14:15 - If ye love me, keep my commandments.",
+                    "Proverbs 3:5 - Trust in the LORD with all thine heart; and lean not unto thine own understanding.",
+                    "Philippians 4:13 - I can do all things through Christ which strengtheneth me.",
+                    "1 Nephi 3:7 - I will go and do the things which the Lord hath commanded.",
+                    "Mosiah 2:17 - When ye are in the service of your fellow beings ye are only in the service of your God.",
+                    "Alma 37:6 - By small and simple things are great things brought to pass."
                 }
             }
         },
@@ -72,7 +76,7 @@ public sealed class HomeFocusConfig
             },
             new() {
                 Id = "typing-youtube-20",
-                Name = "Scripture Typing",
+                Name = "Scripture Passages",
                 Kind = TaskKind.Typing,
                 RewardGroupId = "youtube",
                 RewardMinutes = 20,

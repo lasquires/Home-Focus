@@ -59,8 +59,6 @@ Get-NetFirewallRule -Group {Q(Group)} -ErrorAction SilentlyContinue | Remove-Net
 if (Test-Path {backup}) {{
   $items = Get-Content -Raw {backup} | ConvertFrom-Json
   foreach ($item in @($items)) {{ Set-NetFirewallProfile -Name $item.Name -DefaultOutboundAction $item.DefaultOutboundAction }}
-}} else {{
-  Set-NetFirewallProfile -Profile Domain,Private,Public -DefaultOutboundAction Allow
 }}
 ";
     }
