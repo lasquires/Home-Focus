@@ -106,7 +106,7 @@ Parent Settings requires the PIN. Child task completion never grants administrat
 
 `Install.ps1` registers **HomeFocus Agent** as a Scheduled Task that runs as `SYSTEM` at Windows startup, before a child needs the UI.
 
-The HomeFocus UI is registered to run at interactive logon and configures that Windows user's WinINET proxy to the local HomeFocus proxy.
+The HomeFocus UI is registered to run at interactive logon and configures that Windows user's browser proxy **only after the agent is reachable and filtering has been enabled**. If the agent is missing, the app displays a recovery error instead of crashing.
 
 The enforcement posture is intentionally **fail-closed after filtering has been enabled**. On a new install, filtering starts off. If it was enabled and the UI closes, the firewall remains locked. If the UI stops, direct internet remains blocked. This is why the repository includes `Emergency-Unlock.ps1` for an administrator.
 
@@ -168,7 +168,7 @@ This publishes self-contained single-file executables into `dist/`:
 
 and creates `HomeFocus-Windows-1.0.0.zip` plus `update-manifest.json`.
 
-To create the graphical installer after building, run `./tools/Build-Installer.ps1 -Version 1.0.1`. Manual PowerShell installation (without the graphical installer) remains available:
+To create the graphical installer after building, run `./tools/Build-Installer.ps1 -Version 1.0.2`. Manual PowerShell installation (without the graphical installer) remains available:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
@@ -204,3 +204,16 @@ The task engine is intentionally extensible. A future `MusicPractice` task can p
 `music exercise verified -> task completed -> reward grant created`
 
 MIDI piano support is relatively straightforward; monophonic cello pitch recognition can be added later without changing the firewall/reward architecture.
+
+
+## Troubleshooting the agent
+
+If the app says the background agent is unavailable, **do not enable filtering**. The 1.0.2 installer verifies that the agent starts and responds on localhost port 48191. To diagnose failures, open an administrator PowerShell and check:
+
+```powershell
+Get-ScheduledTask -TaskName "HomeFocus Agent" | Get-ScheduledTaskInfo
+Get-Content "$env:ProgramData\HomeFocus-install.log" -Tail 40
+Get-Content "$env:ProgramData\HomeFocus\HomeFocus.log" -Tail 40
+```
+
+The installer now fails visibly if the background component cannot start. If an older build left a broken browser proxy behind, disable the proxy in Windows Settings > Network & Internet > Proxy before retrying.

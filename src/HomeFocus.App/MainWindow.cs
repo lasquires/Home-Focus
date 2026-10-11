@@ -14,6 +14,8 @@ public sealed class MainWindow : Window
     readonly TextBlock statusText = new();
     readonly DispatcherTimer timer;
     AgentStatus? status;
+    bool refreshing;
+    bool parentPinPromptOpen;
 
     public MainWindow()
     {
@@ -51,22 +53,29 @@ public sealed class MainWindow : Window
 
     async Task RefreshAsync()
     {
+        if (refreshing) return;
+        refreshing = true;
         try
         {
             var r = await agent.SendAsync(new AgentRequest { Type = "status" });
             if (!r.Ok || r.Status is null) throw new InvalidOperationException(r.Error ?? "No status.");
             status = r.Status;
+            // Only apply the proxy after the agent is confirmed reachable and enforcing filtering.
+            if (status.Enabled) ProxySettings.Enable();
+            else ProxySettings.Disable();
             statusText.Text = status.Enabled ? "Internet is limited to approved access" : "HomeFocus is currently unlocked";
             Render();
             if (!status.PinConfigured) await InitializePinAsync();
         }
         catch (Exception ex)
         {
-            statusText.Text = "HomeFocus Agent is unavailable — internet remains fail-closed";
+            status = null;
+            statusText.Text = "HomeFocus Agent unavailable. Verify that HomeFocus Agent is running.";
             grantsPanel.Children.Clear();
             tasksPanel.Children.Clear();
             tasksPanel.Children.Add(new TextBlock { Text = ex.Message, Foreground = Brushes.DarkRed, TextWrapping = TextWrapping.Wrap });
         }
+        finally { refreshing = false; }
     }
 
     void Render()
@@ -117,20 +126,50 @@ public sealed class MainWindow : Window
 
     async Task InitializePinAsync()
     {
-        if (status?.PinConfigured != false) return;
-        var dialog = new PromptWindow("Set Parent PIN", "Create a 4–12 digit parent PIN. This protects HomeFocus settings and cannot be replaced by a child task.") { Owner = this };
-        if (dialog.ShowDialog() != true) return;
-        var r = await agent.SendAsync(new AgentRequest { Type = "initializePin", Pin = dialog.Value });
-        if (!r.Ok) MessageBox.Show(this, r.Error ?? "Could not set PIN.", "HomeFocus", MessageBoxButton.OK, MessageBoxImage.Error);
+        if (status?.PinConfigured != false || parentPinPromptOpen) return;
+        parentPinPromptOpen = true;
+        try
+        {
+            var dialog = new PromptWindow("Set Parent PIN", "Create a 4–12 digit parent PIN. This protects HomeFocus settings.") { Owner = this };
+            if (dialog.ShowDialog() != true) return;
+            var r = await agent.SendAsync(new AgentRequest { Type = "initializePin", Pin = dialog.Value });
+            if (!r.Ok) MessageBox.Show(this, r.Error ?? "Could not set PIN.", "HomeFocus", MessageBoxButton.OK, MessageBoxImage.Error);
+            else if (status is not null) status.PinConfigured = true;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, "Could not set PIN: " + ex.Message, "HomeFocus", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally { parentPinPromptOpen = false; }
     }
 
     async Task OpenParentSettingsAsync()
     {
-        var prompt = new PromptWindow("Parent Settings", "Enter the parent PIN.") { Owner = this };
-        if (prompt.ShowDialog() != true) return;
-        var r = await agent.SendAsync(new AgentRequest { Type = "getConfig", Pin = prompt.Value });
-        if (!r.Ok || r.Config is null) { MessageBox.Show(this, r.Error ?? "Incorrect PIN."); return; }
-        var w = new ParentSettingsWindow(agent, r.Config, prompt.Value) { Owner = this };
-        w.ShowDialog(); await RefreshAsync();
+        try
+        {
+            var rStatus = await agent.SendAsync(new AgentRequest { Type = "status" });
+            if (!rStatus.Ok || rStatus.Status is null) throw new InvalidOperationException(rStatus.Error ?? "Agent did not respond.");
+            status = rStatus.Status;
+            if (!status.PinConfigured)
+            {
+                await InitializePinAsync();
+                if (status?.PinConfigured != true) return;
+            }
+
+            var prompt = new PromptWindow("Parent Settings", "Enter the parent PIN.") { Owner = this };
+            if (prompt.ShowDialog() != true) return;
+            var r = await agent.SendAsync(new AgentRequest { Type = "getConfig", Pin = prompt.Value });
+            if (!r.Ok || r.Config is null) { MessageBox.Show(this, r.Error ?? "Incorrect PIN."); return; }
+            var w = new ParentSettingsWindow(agent, r.Config, prompt.Value) { Owner = this };
+            w.ShowDialog();
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this,
+                "HomeFocus Agent could not be reached. Parent Settings requires the background agent.\n\n" +
+                "Try restarting the computer or reinstalling HomeFocus.\n\nDetails: " + ex.Message,
+                "HomeFocus connection error", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 }

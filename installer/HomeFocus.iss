@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "1.0.1"
+  #define AppVersion "1.0.2"
 #endif
 #ifndef SourceRoot
   #define SourceRoot ".."
@@ -42,8 +42,26 @@ Source: "{#SourceRoot}\Emergency-Unlock.ps1"; DestDir: "{app}"; Flags: ignorever
 Name: "{autoprograms}\HomeFocus"; Filename: "{app}\HomeFocus.exe"
 
 [Run]
-Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File ""{app}\Install.ps1"" -DistPath ""{app}"" -NoStart"; StatusMsg: "Registering HomeFocus agent and startup..."; Flags: runhidden waituntilterminated
-Filename: "{app}\HomeFocus.exe"; Description: "Launch HomeFocus and set the parent PIN"; Flags: nowait postinstall skipifsilent runasoriginaluser
+Filename: "{app}\HomeFocus.exe"; Description: "Launch HomeFocus and set your parent PIN"; Flags: nowait postinstall skipifsilent runasoriginaluser
 
 [UninstallRun]
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File ""{app}\Uninstall.ps1"" -KeepFiles"; Flags: runhidden waituntilterminated
+
+[Code]
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ExitCode: Integer;
+  Cmd: String;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    Cmd := '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' +
+      ExpandConstant('{app}\Install.ps1') + '" -DistPath "' +
+      ExpandConstant('{app}') + '" -NoStart';
+    if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+      Cmd, '', SW_HIDE, ewWaitUntilTerminated, ExitCode) then
+      RaiseException('Could not launch the HomeFocus background service installer.');
+    if ExitCode <> 0 then
+      RaiseException('HomeFocus background service setup failed. See C:\ProgramData\HomeFocus-install.log before retrying.');
+  end;
+end;

@@ -20,13 +20,16 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Build self-contained binaries
         shell: pwsh
-        run: ./tools/Build-Release.ps1 -Version 1.0.1 -Owner "${{ github.repository_owner }}" -Repo "${{ github.event.repository.name }}"
+        run: ./tools/Build-Release.ps1 -Version 1.0.2 -Owner "${{ github.repository_owner }}" -Repo "${{ github.event.repository.name }}"
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup --yes --no-progress
       - name: Build Windows installer
         shell: pwsh
-        run: ./tools/Build-Installer.ps1 -Version 1.0.1
+        run: ./tools/Build-Installer.ps1 -Version 1.0.2
+      - name: Verify graphical installation and background agent
+        shell: pwsh
+        run: ./tools/Test-InstalledAgent.ps1 -Version 1.0.2
       - uses: actions/upload-artifact@v4
         with:
           name: HomeFocus-Setup-Windows
@@ -41,12 +44,12 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.1
-          name: HomeFocus 1.0.1 (preview)
+          tag_name: v1.0.2
+          name: HomeFocus 1.0.2 (preview)
           prerelease: true
           files: |
-            HomeFocus-Setup-1.0.1.exe
-            HomeFocus-Windows-1.0.1.zip
+            HomeFocus-Setup-1.0.2.exe
+            HomeFocus-Windows-1.0.2.zip
       - name: Publish update manifest on main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: pwsh
@@ -55,6 +58,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add update-manifest.json
           if (-not (git diff --cached --quiet)) {
-            git commit -m "Update manifest for v1.0.1"
+            git commit -m "Update manifest for v1.0.2"
             git push origin HEAD:main
           }
