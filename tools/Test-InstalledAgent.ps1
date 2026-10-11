@@ -21,10 +21,12 @@ try {
     $client = New-Object System.Net.Sockets.TcpClient
     try {
       $client.Connect("127.0.0.1",48191)
-      $writer = New-Object System.IO.StreamWriter($client.GetStream())
+      $client.ReceiveTimeout = 3000
+      $stream = $client.GetStream()
+      $writer = [System.IO.StreamWriter]::new($stream)
       $writer.AutoFlush = $true
       $writer.WriteLine('{"Type":"status"}')
-      $reader = New-Object System.IO.StreamReader($client.GetStream())
+      $reader = [System.IO.StreamReader]::new($stream)
       $json = $reader.ReadLine()
       if (-not $json) { throw "Empty response from agent." }
       $response = $json | ConvertFrom-Json
@@ -34,7 +36,10 @@ try {
       $connected = $true
       Write-Host "Agent responded successfully. Parent PIN is not yet set, and filtering is disabled."
       break
-    } catch { Start-Sleep -Seconds 1 }
+    } catch {
+      if (($i % 5) -eq 0) { Write-Warning ("RPC attempt $($i + 1): " + $_.Exception.Message) }
+      Start-Sleep -Seconds 1
+    }
     finally { $client.Close() }
   }
   if (-not $connected) { throw "Installed agent never answered a localhost status request." }
