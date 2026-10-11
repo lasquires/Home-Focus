@@ -20,6 +20,7 @@ foreach ($p in $projects) {
   $out = Join-Path $stage ([IO.Path]::GetFileNameWithoutExtension($p.Path))
   dotnet publish (Join-Path $root $p.Path) -c Release -r $Runtime --self-contained true `
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=$Version -o $out
+  if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed for $($p.Path) with code $LASTEXITCODE" }
   Copy-Item (Join-Path $out $p.Exe) (Join-Path $dist $p.Exe)
 }
 Set-Content -Path (Join-Path $dist "version.txt") -Value $Version -Encoding ASCII

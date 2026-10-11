@@ -34,7 +34,7 @@ internal sealed class CommandServer
 
     async Task HandleAsync(TcpClient client, CancellationToken ct)
     {
-        using (client)
+        using var connectedClient = client;
         using var stream = client.GetStream();
         using var reader = new StreamReader(stream, Encoding.UTF8, false, 8192, leaveOpen: true);
         using var writer = new StreamWriter(stream, new UTF8Encoding(false), 8192, leaveOpen: true) { AutoFlush = true };

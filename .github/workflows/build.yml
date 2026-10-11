@@ -7,6 +7,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -34,3 +37,24 @@ jobs:
           name: HomeFocus-Update-Package
           path: HomeFocus-Windows-*.zip
           if-no-files-found: error
+      - name: Publish ready-to-run preview installer
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.1
+          name: HomeFocus 1.0.1 (preview)
+          prerelease: true
+          files: |
+            HomeFocus-Setup-1.0.1.exe
+            HomeFocus-Windows-1.0.1.zip
+      - name: Publish update manifest on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add update-manifest.json
+          if (-not (git diff --cached --quiet)) {
+            git commit -m "Update manifest for v1.0.1"
+            git push origin HEAD:main
+          }
