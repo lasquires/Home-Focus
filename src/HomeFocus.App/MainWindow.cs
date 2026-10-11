@@ -77,8 +77,7 @@ public sealed class MainWindow : Window
         {
             Text = "HomeFocus",
             FontSize = 32,
-            FontWeight = FontWeights.Bold,
-            LetterSpacing = -0.2
+            FontWeight = FontWeights.Bold
         });
         statusText.Text = "Connecting to HomeFocus…";
         statusText.Foreground = Brush("TextSecondary");
