@@ -1,8 +1,8 @@
 param(
   [string]$Version = "1.0.0",
   [string]$Runtime = "win-x64",
-  [string]$Owner = "OWNER",
-  [string]$Repo = "REPO"
+  [string]$Owner = "lasquires",
+  [string]$Repo = "Home-Focus"
 )
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
