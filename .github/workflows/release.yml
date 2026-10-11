@@ -1,0 +1,41 @@
+name: Release HomeFocus Windows
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          ./tools/Build-Release.ps1 -Version $version -Owner "${{ github.repository_owner }}" -Repo "${{ github.event.repository.name }}"
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: HomeFocus-Windows-*.zip
+          generate_release_notes: true
+      - name: Publish update manifest to main
+        shell: pwsh
+        run: |
+          Copy-Item update-manifest.json $env:RUNNER_TEMP\update-manifest.json
+          git fetch origin main
+          git checkout main
+          Copy-Item $env:RUNNER_TEMP\update-manifest.json update-manifest.json -Force
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add update-manifest.json
+          if (-not (git diff --cached --quiet)) {
+            git commit -m "Update manifest for ${{ github.ref_name }}"
+            git push origin main
+          }
