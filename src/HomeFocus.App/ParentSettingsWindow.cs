@@ -16,6 +16,9 @@ internal sealed class ParentSettingsWindow : Window
     readonly ListBox collectionList=new(); readonly TextBox collectionName=new(); readonly TextBox collectionPassages=MultiBox(220);
     readonly CheckBox updatesEnabled=new(){Content="Check GitHub for updates"}; readonly CheckBox autoInstall=new(){Content="Install verified updates automatically"}; readonly TextBox manifestUrl=new(); readonly TextBox updateHours=new();
 
+    RewardGroup? editingReward;
+    TaskDefinition? editingTask;
+    PassageCollection? editingCollection;
     RewardGroup? SelectedReward => rewardList.SelectedItem as RewardGroup;
     TaskDefinition? SelectedTask => taskList.SelectedItem as TaskDefinition;
     PassageCollection? SelectedCollection => collectionList.SelectedItem as PassageCollection;
@@ -64,21 +67,40 @@ internal sealed class ParentSettingsWindow : Window
 
     UIElement RewardsTab()
     {
-        var g=TwoCol(); var left=new DockPanel{Margin=new Thickness(12)}; var buttons=new StackPanel{Orientation=Orientation.Horizontal,Margin=new Thickness(0,8,0,0)}; var add=new Button{Content="Add",MinWidth=70}; var del=new Button{Content="Delete",MinWidth=70,Margin=new Thickness(8,0,0,0)}; add.Click+=(_,__)=>AddReward(); del.Click+=(_,__)=>DeleteReward(); buttons.Children.Add(add);buttons.Children.Add(del);DockPanel.SetDock(buttons,Dock.Bottom);left.Children.Add(buttons); rewardList.SelectionChanged+=(_,__)=>LoadReward();left.Children.Add(rewardList);g.Children.Add(left);
+        var g=TwoCol(); var left=new DockPanel{Margin=new Thickness(12)}; var buttons=new StackPanel{Orientation=Orientation.Horizontal,Margin=new Thickness(0,8,0,0)}; var add=new Button{Content="Add",MinWidth=70}; var del=new Button{Content="Delete",MinWidth=70,Margin=new Thickness(8,0,0,0)}; add.Click+=(_,__)=>AddReward(); del.Click+=(_,__)=>DeleteReward(); buttons.Children.Add(add);buttons.Children.Add(del);DockPanel.SetDock(buttons,Dock.Bottom);left.Children.Add(buttons); rewardList.SelectionChanged+=(_,__)=>
+        {
+            if (editingReward is not null) PersistRewardFields(editingReward);
+            editingReward=SelectedReward;
+            LoadReward();
+            RefreshCombos();
+        };left.Children.Add(rewardList);g.Children.Add(left);
         var form=new StackPanel{Margin=new Thickness(16)}; form.Children.Add(Label("Name"));form.Children.Add(rewardName);form.Children.Add(Label("Domains (one per line)"));form.Children.Add(rewardDomains);form.Children.Add(rewardAll);form.Children.Add(Label("Optional program paths allowed directly while active"));form.Children.Add(rewardPrograms); Grid.SetColumn(form,1);g.Children.Add(form); return g;
     }
 
     UIElement TasksTab()
     {
-        var g=TwoCol(); var left=new DockPanel{Margin=new Thickness(12)}; var buttons=new StackPanel{Orientation=Orientation.Horizontal,Margin=new Thickness(0,8,0,0)}; var add=new Button{Content="Add",MinWidth=70};var del=new Button{Content="Delete",MinWidth=70,Margin=new Thickness(8,0,0,0)};add.Click+=(_,__)=>AddTask();del.Click+=(_,__)=>DeleteTask();buttons.Children.Add(add);buttons.Children.Add(del);DockPanel.SetDock(buttons,Dock.Bottom);left.Children.Add(buttons);taskList.SelectionChanged+=(_,__)=>LoadTask();left.Children.Add(taskList);g.Children.Add(left);
+        var g=TwoCol(); var left=new DockPanel{Margin=new Thickness(12)}; var buttons=new StackPanel{Orientation=Orientation.Horizontal,Margin=new Thickness(0,8,0,0)}; var add=new Button{Content="Add",MinWidth=70};var del=new Button{Content="Delete",MinWidth=70,Margin=new Thickness(8,0,0,0)};add.Click+=(_,__)=>AddTask();del.Click+=(_,__)=>DeleteTask();buttons.Children.Add(add);buttons.Children.Add(del);DockPanel.SetDock(buttons,Dock.Bottom);left.Children.Add(buttons);taskList.SelectionChanged+=(_,__)=>
+        {
+            if (editingTask is not null) PersistTaskFields(editingTask);
+            editingTask=SelectedTask;
+            LoadTask();
+        };left.Children.Add(taskList);g.Children.Add(left);
         taskKind.ItemsSource=Enum.GetValues<TaskKind>();
         var f=new StackPanel{Margin=new Thickness(16)};f.Children.Add(Label("Task name"));f.Children.Add(taskName);f.Children.Add(Label("Task type"));f.Children.Add(taskKind);f.Children.Add(Label("Reward group"));f.Children.Add(taskReward);f.Children.Add(Label("Reward minutes"));f.Children.Add(rewardMinutes);f.Children.Add(Label("Ice clicks (Ice tasks)"));f.Children.Add(iceClicks);f.Children.Add(Label("Passage collection (Typing tasks)"));f.Children.Add(taskCollection);f.Children.Add(Label("Passages required"));f.Children.Add(passageCount);f.Children.Add(Label("Cooldown minutes"));f.Children.Add(cooldown);f.Children.Add(Label("Daily reward cap minutes"));f.Children.Add(dailyCap);var scroll=new ScrollViewer{Content=f,VerticalScrollBarVisibility=ScrollBarVisibility.Auto};Grid.SetColumn(scroll,1);g.Children.Add(scroll);return g;
     }
 
     UIElement PassagesTab()
     {
-        var g=TwoCol(); var left=new DockPanel{Margin=new Thickness(12)};var buttons=new StackPanel{Orientation=Orientation.Horizontal,Margin=new Thickness(0,8,0,0)};var add=new Button{Content="Add",MinWidth=70};var del=new Button{Content="Delete",MinWidth=70,Margin=new Thickness(8,0,0,0)};add.Click+=(_,__)=>AddCollection();del.Click+=(_,__)=>DeleteCollection();buttons.Children.Add(add);buttons.Children.Add(del);DockPanel.SetDock(buttons,Dock.Bottom);left.Children.Add(buttons);collectionList.SelectionChanged+=(_,__)=>LoadCollection();left.Children.Add(collectionList);g.Children.Add(left);
-        var f=new StackPanel{Margin=new Thickness(16)};f.Children.Add(Label("Collection name"));f.Children.Add(collectionName);f.Children.Add(Label("Passages — separate passages with a blank line"));f.Children.Add(collectionPassages);f.Children.Add(new TextBlock{Text="Scripture Passages can include Bible and Book of Mormon verses in one collection. Add or replace any passages here, using one blank line between them. Tasks randomly choose distinct passages.",TextWrapping=TextWrapping.Wrap,Foreground=System.Windows.Media.Brushes.DimGray,Margin=new Thickness(0,10,0,0)});Grid.SetColumn(f,1);g.Children.Add(f);return g;
+        var g=TwoCol(); var left=new DockPanel{Margin=new Thickness(12)};var buttons=new StackPanel{Orientation=Orientation.Horizontal,Margin=new Thickness(0,8,0,0)};var add=new Button{Content="Add",MinWidth=70};var del=new Button{Content="Delete",MinWidth=70,Margin=new Thickness(8,0,0,0)};add.Click+=(_,__)=>AddCollection();del.Click+=(_,__)=>DeleteCollection();buttons.Children.Add(add);buttons.Children.Add(del);DockPanel.SetDock(buttons,Dock.Bottom);left.Children.Add(buttons);collectionList.SelectionChanged+=(_,__)=>
+        {
+            if (editingCollection is not null) PersistCollectionFields(editingCollection);
+            editingCollection=SelectedCollection;
+            LoadCollection();
+        };left.Children.Add(collectionList);g.Children.Add(left);
+        var f=new StackPanel{Margin=new Thickness(16)};f.Children.Add(Label("Collection name"));f.Children.Add(collectionName);f.Children.Add(Label("Passages — separate passages with a blank line"));f.Children.Add(collectionPassages);
+        var starter=new Button{Content="Load Bible + Book of Mormon examples",Margin=new Thickness(0,10,0,0)};
+        starter.Click+=(_,__)=>collectionPassages.Text=string.Join(Environment.NewLine+Environment.NewLine,HomeFocusConfig.CreateDefault().PassageCollections.First(c=>c.Id=="scripture").Passages);
+        f.Children.Add(starter);f.Children.Add(new TextBlock{Text="Scripture Passages can include Bible and Book of Mormon verses in one collection. Add or replace any passages here, using one blank line between them. Tasks randomly choose distinct passages.",TextWrapping=TextWrapping.Wrap,Foreground=System.Windows.Media.Brushes.DimGray,Margin=new Thickness(0,10,0,0)});Grid.SetColumn(f,1);g.Children.Add(f);return g;
     }
 
     UIElement UpdatesTab()
@@ -94,26 +116,70 @@ internal sealed class ParentSettingsWindow : Window
         RefreshCombos(); if(config.RewardGroups.Count>0)rewardList.SelectedIndex=0;if(config.Tasks.Count>0)taskList.SelectedIndex=0;if(config.PassageCollections.Count>0)collectionList.SelectedIndex=0;
     }
 
-    void RefreshCombos(){taskReward.ItemsSource=null;taskReward.ItemsSource=config.RewardGroups;taskReward.DisplayMemberPath="Name";taskCollection.ItemsSource=null;taskCollection.ItemsSource=config.PassageCollections;taskCollection.DisplayMemberPath="Name";}
-    void PersistReward(){var x=SelectedReward;if(x is null)return;x.Name=rewardName.Text.Trim();x.Domains=Lines(rewardDomains.Text);x.AllowAllInternet=rewardAll.IsChecked==true;x.ProgramPaths=Lines(rewardPrograms.Text);rewardList.Items.Refresh();RefreshCombos();}
+    void RefreshCombos()
+    {
+        // Never drop a task's selection when a parent edits a reward/collection.
+        // Resetting ItemsSource to null used to silently save blank IDs.
+        var rewardId=(taskReward.SelectedItem as RewardGroup)?.Id ?? SelectedTask?.RewardGroupId;
+        var collectionId=(taskCollection.SelectedItem as PassageCollection)?.Id ?? SelectedTask?.PassageCollectionId;
+        if(taskReward.ItemsSource is null) taskReward.ItemsSource=config.RewardGroups;
+        else taskReward.Items.Refresh();
+        taskReward.DisplayMemberPath="Name";
+        if(taskCollection.ItemsSource is null) taskCollection.ItemsSource=config.PassageCollections;
+        else taskCollection.Items.Refresh();
+        taskCollection.DisplayMemberPath="Name";
+        taskReward.SelectedItem=config.RewardGroups.FirstOrDefault(r=>r.Id==rewardId);
+        taskCollection.SelectedItem=config.PassageCollections.FirstOrDefault(c=>c.Id==collectionId);
+    }
+    void PersistRewardFields(RewardGroup x){x.Name=rewardName.Text.Trim();x.Domains=Lines(rewardDomains.Text);x.AllowAllInternet=rewardAll.IsChecked==true;x.ProgramPaths=Lines(rewardPrograms.Text);}
+    void PersistReward(){var x=SelectedReward;if(x is null)return;PersistRewardFields(x);rewardList.Items.Refresh();RefreshCombos();}
     void LoadReward(){rewardName.Text=SelectedReward?.Name??"";rewardDomains.Text=string.Join(Environment.NewLine,SelectedReward?.Domains??new());rewardAll.IsChecked=SelectedReward?.AllowAllInternet??false;rewardPrograms.Text=string.Join(Environment.NewLine,SelectedReward?.ProgramPaths??new());}
     void AddReward(){PersistReward();var x=new RewardGroup{Name="New reward"};config.RewardGroups.Add(x);rewardList.Items.Refresh();RefreshCombos();rewardList.SelectedItem=x;}
     void DeleteReward(){if(SelectedReward is not {} x)return;config.RewardGroups.Remove(x);rewardList.Items.Refresh();RefreshCombos();}
 
-    void PersistTask(){var x=SelectedTask;if(x is null)return;x.Name=taskName.Text.Trim();x.Kind=taskKind.SelectedItem is TaskKind k?k:TaskKind.Ice;x.RewardGroupId=(taskReward.SelectedItem as RewardGroup)?.Id??"";x.RewardMinutes=Num(rewardMinutes.Text,10,1,1440);x.IceClicks=Num(iceClicks.Text,100,1,100000);x.PassageCollectionId=(taskCollection.SelectedItem as PassageCollection)?.Id??"";x.PassagesRequired=Num(passageCount.Text,1,1,100);x.CooldownMinutes=Num(cooldown.Text,0,0,10080);x.DailyRewardCapMinutes=Num(dailyCap.Text,120,0,1440);taskList.Items.Refresh();}
+    void PersistTaskFields(TaskDefinition x)
+    {
+        x.Name=taskName.Text.Trim();
+        x.Kind=taskKind.SelectedItem is TaskKind k?k:TaskKind.Ice;
+        x.RewardGroupId=(taskReward.SelectedItem as RewardGroup)?.Id??x.RewardGroupId;
+        x.RewardMinutes=Num(rewardMinutes.Text,10,1,1440);
+        x.IceClicks=Num(iceClicks.Text,100,1,100000);
+        x.PassageCollectionId=(taskCollection.SelectedItem as PassageCollection)?.Id??x.PassageCollectionId;
+        x.PassagesRequired=Num(passageCount.Text,1,1,100);
+        x.CooldownMinutes=Num(cooldown.Text,0,0,10080);
+        x.DailyRewardCapMinutes=Num(dailyCap.Text,120,0,1440);
+    }
+    void PersistTask(){var x=SelectedTask;if(x is null)return;PersistTaskFields(x);taskList.Items.Refresh();}
     void LoadTask(){var x=SelectedTask;if(x is null)return;taskName.Text=x.Name;taskKind.SelectedItem=x.Kind;taskReward.SelectedItem=config.RewardGroups.FirstOrDefault(r=>r.Id==x.RewardGroupId);rewardMinutes.Text=x.RewardMinutes.ToString();iceClicks.Text=x.IceClicks.ToString();taskCollection.SelectedItem=config.PassageCollections.FirstOrDefault(c=>c.Id==x.PassageCollectionId);passageCount.Text=x.PassagesRequired.ToString();cooldown.Text=x.CooldownMinutes.ToString();dailyCap.Text=x.DailyRewardCapMinutes.ToString();}
     void AddTask(){PersistTask();var x=new TaskDefinition{Name="New task",RewardGroupId=config.RewardGroups.FirstOrDefault()?.Id??"",PassageCollectionId=config.PassageCollections.FirstOrDefault()?.Id??""};config.Tasks.Add(x);taskList.Items.Refresh();taskList.SelectedItem=x;}
     void DeleteTask(){if(SelectedTask is not {} x)return;config.Tasks.Remove(x);taskList.Items.Refresh();}
 
-    void PersistCollection(){var x=SelectedCollection;if(x is null)return;x.Name=collectionName.Text.Trim();x.Passages=collectionPassages.Text.Replace("\r\n","\n").Split("\n\n",StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries).ToList();collectionList.Items.Refresh();RefreshCombos();}
+    void PersistCollectionFields(PassageCollection x){x.Name=collectionName.Text.Trim();x.Passages=collectionPassages.Text.Replace("\r\n","\n").Split("\n\n",StringSplitOptions.RemoveEmptyEntries|StringSplitOptions.TrimEntries).ToList();}
+    void PersistCollection(){var x=SelectedCollection;if(x is null)return;PersistCollectionFields(x);collectionList.Items.Refresh();RefreshCombos();}
     void LoadCollection(){collectionName.Text=SelectedCollection?.Name??"";collectionPassages.Text=string.Join(Environment.NewLine+Environment.NewLine,SelectedCollection?.Passages??new());}
     void AddCollection(){PersistCollection();var x=new PassageCollection{Name="New collection"};config.PassageCollections.Add(x);collectionList.Items.Refresh();RefreshCombos();collectionList.SelectedItem=x;}
     void DeleteCollection(){if(SelectedCollection is not {} x)return;config.PassageCollections.Remove(x);collectionList.Items.Refresh();RefreshCombos();}
 
     async Task SaveAsync()
     {
-        PersistReward();PersistTask();PersistCollection();config.Enabled=enabled.IsChecked==true;config.AllowLocalNetwork=allowLan.IsChecked==true;config.AlwaysAllowedDomains=Lines(whitelist.Text);config.Updates.Enabled=updatesEnabled.IsChecked==true;config.Updates.AutoInstall=autoInstall.IsChecked==true;config.Updates.ManifestUrl=manifestUrl.Text.Trim();config.Updates.CheckEveryHours=Num(updateHours.Text,6,1,168);
-        try{var r=await agent.SendAsync(new AgentRequest{Type="saveConfig",Pin=pin,Config=config});if(!r.Ok)throw new InvalidOperationException(r.Error);DialogResult=true;Close();}catch(Exception ex){MessageBox.Show(this,ex.Message,"HomeFocus",MessageBoxButton.OK,MessageBoxImage.Error);}
+        // Save the task first, before changing any selection lists.
+        PersistTask();PersistCollection();PersistReward();
+        config.Enabled=enabled.IsChecked==true;config.AllowLocalNetwork=allowLan.IsChecked==true;config.AlwaysAllowedDomains=Lines(whitelist.Text);
+        config.Updates.Enabled=updatesEnabled.IsChecked==true;config.Updates.AutoInstall=autoInstall.IsChecked==true;config.Updates.ManifestUrl=manifestUrl.Text.Trim();config.Updates.CheckEveryHours=Num(updateHours.Text,6,1,168);
+        try
+        {
+            foreach(var task in config.Tasks)
+            {
+                if (!config.RewardGroups.Any(g=>g.Id==task.RewardGroupId))
+                    throw new InvalidOperationException($"Task '{task.Name}' has no valid reward group. Select one in the Tasks tab.");
+                if(task.Kind==TaskKind.Typing && !config.PassageCollections.Any(c=>c.Id==task.PassageCollectionId && c.Passages.Any(p=>!string.IsNullOrWhiteSpace(p))))
+                    throw new InvalidOperationException($"Task '{task.Name}' needs a passage collection with at least one passage. Check Tasks and Passages.");
+            }
+            var r=await agent.SendAsync(new AgentRequest{Type="saveConfig",Pin=pin,Config=config});
+            if(!r.Ok)throw new InvalidOperationException(r.Error);
+            DialogResult=true;Close();
+        }
+        catch(Exception ex){MessageBox.Show(this,ex.Message,"HomeFocus",MessageBoxButton.OK,MessageBoxImage.Error);}
     }
 
     async Task ChangePinAsync(){var n=new PromptWindow("Change PIN","Enter a new 4–12 digit parent PIN."){Owner=this};if(n.ShowDialog()!=true)return;var r=await agent.SendAsync(new AgentRequest{Type="changePin",Pin=pin,TaskId=n.Value});MessageBox.Show(this,r.Ok?"PIN changed. Reopen Parent Settings with the new PIN.":r.Error??"Could not change PIN.");if(r.Ok)Close();}

@@ -9,7 +9,8 @@ public enum TaskKind { Ice, Typing }
 
 public sealed class HomeFocusConfig
 {
-    public int SchemaVersion { get; set; } = 1;
+    public const int CurrentSchemaVersion = 2;
+    public int SchemaVersion { get; set; } = CurrentSchemaVersion;
     public bool Enabled { get; set; } = false;
     public string ParentPinSalt { get; set; } = "";
     public string ParentPinHash { get; set; } = "";
@@ -31,7 +32,7 @@ public sealed class HomeFocusConfig
         {
             new() {
                 Id = "youtube",
-                Name = "YouTube",
+                Name = "Recreation websites",
                 Domains = new List<string> {
                     "youtube.com", "youtu.be", "ytimg.com", "googlevideo.com",
                     "youtubei.googleapis.com", "youtube.googleapis.com"
@@ -87,6 +88,62 @@ public sealed class HomeFocusConfig
             }
         }
     };
+
+    // One-time migration for saved 1.0.1/1.0.2 configurations. The older
+    // settings UI sometimes cleared RewardGroupId and PassageCollectionId.
+    // Repair only broken references and the untouched example names.
+    // Preserve the parent PIN, custom collections, task durations and sites.
+    public bool MigrateLegacySettings()
+    {
+        if (SchemaVersion >= CurrentSchemaVersion) return false;
+        RewardGroups ??= new();
+        Tasks ??= new();
+        PassageCollections ??= new();
+
+        var examples = CreateDefault();
+        var scripture = PassageCollections.FirstOrDefault(p => p.Id == "scripture");
+        if (scripture is null)
+        {
+            scripture = examples.PassageCollections.First(p => p.Id == "scripture");
+            PassageCollections.Add(scripture);
+        }
+        else
+        {
+            if (scripture.Passages is null || scripture.Passages.All(string.IsNullOrWhiteSpace))
+                scripture.Passages = new List<string>(examples.PassageCollections.First(p => p.Id == "scripture").Passages);
+            if (scripture.Name == "Scripture Mastery" || scripture.Name == "Book of Mormon")
+                scripture.Name = "Scripture Passages";
+        }
+
+        var recreation = RewardGroups.FirstOrDefault(g => g.Id == "youtube");
+        if (recreation is not null && recreation.Name == "YouTube")
+            recreation.Name = "Recreation websites";
+        if (RewardGroups.Count == 0 && Tasks.Any(t => t.Id is "ice-youtube-10" or "typing-youtube-20"))
+        {
+            recreation = examples.RewardGroups.First();
+            RewardGroups.Add(recreation);
+        }
+
+        foreach (var task in Tasks)
+        {
+            if (!RewardGroups.Any(r => r.Id == task.RewardGroupId) && RewardGroups.Count > 0)
+                task.RewardGroupId = (recreation ?? RewardGroups[0]).Id;
+
+            if (task.Kind == TaskKind.Typing &&
+                !PassageCollections.Any(p => p.Id == task.PassageCollectionId && p.Passages?.Any(s => !string.IsNullOrWhiteSpace(s)) == true))
+            {
+                task.PassageCollectionId = task.Id == "typing-youtube-20" ||
+                    task.Name == "Scripture Passages"
+                    ? scripture.Id
+                    : PassageCollections.FirstOrDefault(p => p.Passages?.Any(s => !string.IsNullOrWhiteSpace(s)) == true)?.Id ?? scripture.Id;
+            }
+            if (task.Id == "typing-youtube-20" && task.Name == "Scripture Typing")
+                task.Name = "Scripture Passages";
+        }
+
+        SchemaVersion = CurrentSchemaVersion;
+        return true;
+    }
 }
 
 public sealed class RewardGroup

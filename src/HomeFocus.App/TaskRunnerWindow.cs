@@ -43,7 +43,7 @@ internal sealed class TaskRunnerWindow : Window
     {
         var collection=collections.FirstOrDefault(x=>x.Id==task.PassageCollectionId);
         var source=collection?.Passages.Where(x=>!string.IsNullOrWhiteSpace(x)).ToList() ?? new List<string>();
-        if (source.Count==0) { root.Children.Add(new TextBlock { Text="This passage collection is empty. Ask a parent to add passages.", Foreground=Brushes.DarkRed }); return; }
+        if (source.Count==0) { root.Children.Add(new TextBlock { Text="No passages are assigned to this task. A parent can choose a collection in Parent Settings > Tasks, or add passages in Parent Settings > Passages.", Foreground=Brushes.DarkRed, TextWrapping=TextWrapping.Wrap }); return; }
         passages=source.OrderBy(_=>Random.Shared.Next()).Take(Math.Min(Math.Max(1,task.PassagesRequired),source.Count)).ToList();
         passageIndex=0; ShowPassage();
     }

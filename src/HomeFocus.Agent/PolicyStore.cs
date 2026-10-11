@@ -13,6 +13,8 @@ internal sealed class PolicyStore
     {
         Directory.CreateDirectory(HomeFocusPaths.ProgramDataDir);
         Config = Load<HomeFocusConfig>(HomeFocusPaths.ConfigPath) ?? HomeFocusConfig.CreateDefault();
+        if (Config.MigrateLegacySettings())
+            Log.Write("Updated legacy HomeFocus task and passage references.");
         State = Load<AgentState>(HomeFocusPaths.StatePath) ?? new AgentState();
         SaveConfig(); SaveState();
     }

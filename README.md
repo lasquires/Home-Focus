@@ -42,7 +42,9 @@ Use this for school systems, learning sites, or other resources that should not 
 
 A reward group defines what becomes available temporarily.
 
-Example `YouTube` group:
+The default reward group is called **Recreation websites**. YouTube URLs are included as starter allowed domains for earned time, not as a special required task type. The parent can remove YouTube and add any other domains in Parent Settings > Rewards.
+
+Example domain entries in that group:
 
 - `youtube.com`
 - `youtu.be`
@@ -73,7 +75,7 @@ The parent chooses the number of required clicks. Default examples use 100. Comp
 
 #### Scripture Passages / typing
 
-The built-in **Scripture Passages** task includes selections from **both the Bible and the Book of Mormon**. Parents can edit or replace the selections and add custom passage collections for scripture mastery, spelling, vocabulary, and other practice.
+The built-in **Scripture Passages** task includes selections from **both the Bible and the Book of Mormon**. It comes ready to use and repairs missing references left by older releases without resetting the parent's customized whitelist, PIN or reward durations. Parents can edit or replace the selections and add custom passage collections for scripture mastery, spelling, vocabulary, and other practice.
 
 A typing task specifies how many passages are required. HomeFocus randomly selects distinct passages each attempt. The child does not choose them.
 
@@ -168,7 +170,7 @@ This publishes self-contained single-file executables into `dist/`:
 
 and creates `HomeFocus-Windows-1.0.0.zip` plus `update-manifest.json`.
 
-To create the graphical installer after building, run `./tools/Build-Installer.ps1 -Version 1.0.2`. Manual PowerShell installation (without the graphical installer) remains available:
+To create the graphical installer after building, run `./tools/Build-Installer.ps1 -Version 1.0.3`. Manual PowerShell installation (without the graphical installer) remains available:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
@@ -208,7 +210,7 @@ MIDI piano support is relatively straightforward; monophonic cello pitch recogni
 
 ## Troubleshooting the agent
 
-If the app says the background agent is unavailable, **do not enable filtering**. The 1.0.2 installer verifies that the agent starts and responds on localhost port 48191. To diagnose failures, open an administrator PowerShell and check:
+If the app says the background agent is unavailable, **do not enable filtering**. The 1.0.3 installer verifies that the agent starts and responds on localhost port 48191. To diagnose failures, open an administrator PowerShell and check:
 
 ```powershell
 Get-ScheduledTask -TaskName "HomeFocus Agent" | Get-ScheduledTaskInfo

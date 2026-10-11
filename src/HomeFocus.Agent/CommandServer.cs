@@ -115,6 +115,14 @@ internal sealed class CommandServer
         if (c.Tasks.Any(t => t.RewardMinutes < 1 || t.RewardMinutes > 1440)) throw new InvalidOperationException("Task reward must be 1–1440 minutes.");
         if (c.Tasks.Any(t => t.IceClicks < 1 || t.IceClicks > 100000)) throw new InvalidOperationException("Ice clicks must be 1–100000.");
         if (c.Tasks.Any(t => t.PassagesRequired < 1 || t.PassagesRequired > 100)) throw new InvalidOperationException("Passages required must be 1–100.");
+        foreach (var task in c.Tasks)
+        {
+            if (!c.RewardGroups.Any(g => g.Id == task.RewardGroupId))
+                throw new InvalidOperationException($"Task '{task.Name}' has no valid reward group.");
+            if (task.Kind == TaskKind.Typing && !c.PassageCollections.Any(p =>
+                    p.Id == task.PassageCollectionId && p.Passages?.Any(s => !string.IsNullOrWhiteSpace(s)) == true))
+                throw new InvalidOperationException($"Task '{task.Name}' has no valid passage collection.");
+        }
         foreach (var d in c.AlwaysAllowedDomains.Concat(c.RewardGroups.SelectMany(g => g.Domains)))
             if (string.IsNullOrWhiteSpace(DomainMatcher.Normalize(d))) throw new InvalidOperationException("Empty/invalid domain entry.");
     }

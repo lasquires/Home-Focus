@@ -70,6 +70,11 @@ internal sealed class PolicyEngine
             if (ready > now)
                 return new() { Task = task, Available = false, Reason = $"Available at {ready.LocalDateTime:t}", RewardedTodayMinutes = rewarded };
         }
+        if (!store.Config.RewardGroups.Any(g => g.Id == task.RewardGroupId))
+            return new() { Task = task, Available = false, Reason = "Choose a reward group in Parent Settings", RewardedTodayMinutes = rewarded };
+        if (task.Kind == TaskKind.Typing &&
+            !store.Config.PassageCollections.Any(p => p.Id == task.PassageCollectionId && p.Passages?.Any(s => !string.IsNullOrWhiteSpace(s)) == true))
+            return new() { Task = task, Available = false, Reason = "Choose a passage collection in Parent Settings", RewardedTodayMinutes = rewarded };
         return new() { Task = task, Available = true, Reason = "", RewardedTodayMinutes = rewarded };
     }
 
