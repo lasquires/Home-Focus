@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Threading;
 using HomeFocus.Shared;
 
@@ -12,6 +13,8 @@ public sealed class MainWindow : Window
     readonly StackPanel grantsPanel = new();
     readonly StackPanel tasksPanel = new();
     readonly TextBlock statusText = new();
+    readonly TextBlock statusPillText = new();
+    readonly Border statusPill = new();
     readonly DispatcherTimer timer;
     AgentStatus? status;
     bool refreshing;
@@ -19,37 +22,138 @@ public sealed class MainWindow : Window
 
     public MainWindow()
     {
-        Title = "HomeFocus"; Width = 760; Height = 720; MinWidth = 680; MinHeight = 560;
+        Title = "HomeFocus";
+        Width = 900;
+        Height = 760;
+        MinWidth = 760;
+        MinHeight = 620;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        Background = new SolidColorBrush(Color.FromRgb(246,247,249));
 
-        var root = new DockPanel { Margin = new Thickness(28) };
-        var header = new Grid { Margin = new Thickness(0,0,0,22) };
-        header.ColumnDefinitions.Add(new ColumnDefinition());
-        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var title = new StackPanel();
-        title.Children.Add(new TextBlock { Text = "HomeFocus", FontSize = 30, FontWeight = FontWeights.Bold });
-        statusText.Foreground = Brushes.DimGray; statusText.Margin = new Thickness(0,4,0,0); title.Children.Add(statusText);
-        header.Children.Add(title);
-        var parent = new Button { Content = "Parent Settings", Padding = new Thickness(15,8,15,8), MinWidth = 130 };
-        parent.Click += async (_,__) => await OpenParentSettingsAsync();
-        Grid.SetColumn(parent, 1); header.Children.Add(parent);
-        DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
+        var root = new Grid { Margin = new Thickness(30) };
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition());
 
-        var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        var header = BuildHeader();
+        root.Children.Add(header);
+
+        var scroll = new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            Margin = new Thickness(0, 24, 0, 0)
+        };
+        Grid.SetRow(scroll, 1);
+
         var body = new StackPanel();
-        body.Children.Add(SectionTitle("Active access"));
-        grantsPanel.Margin = new Thickness(0,8,0,24); body.Children.Add(grantsPanel);
-        body.Children.Add(SectionTitle("Earn access"));
-        tasksPanel.Margin = new Thickness(0,8,0,0); body.Children.Add(tasksPanel);
-        scroll.Content = body; root.Children.Add(scroll); Content = root;
+        body.Children.Add(SectionHeader("Active access", "Temporary access you have earned right now."));
+        grantsPanel.Margin = new Thickness(0, 10, 0, 28);
+        body.Children.Add(grantsPanel);
+
+        body.Children.Add(SectionHeader("Earn access", "Choose a task to unlock one of your parent-approved rewards."));
+        tasksPanel.Margin = new Thickness(0, 10, 0, 0);
+        body.Children.Add(tasksPanel);
+
+        scroll.Content = body;
+        root.Children.Add(scroll);
+        Content = root;
 
         Loaded += async (_,__) => await RefreshAsync();
-        timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-        timer.Tick += async (_,__) => await RefreshAsync(); timer.Start();
+        timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        timer.Tick += async (_,__) => await RefreshAsync();
+        timer.Start();
     }
 
-    static TextBlock SectionTitle(string text) => new() { Text = text, FontSize = 20, FontWeight = FontWeights.SemiBold };
+    UIElement BuildHeader()
+    {
+        var card = Card();
+        card.Padding = new Thickness(22);
+
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var left = new StackPanel();
+        left.Children.Add(new TextBlock
+        {
+            Text = "HomeFocus",
+            FontSize = 32,
+            FontWeight = FontWeights.Bold
+        });
+        statusText.Text = "Connecting to HomeFocus…";
+        statusText.Foreground = Brush("TextSecondary");
+        statusText.FontSize = 14;
+        statusText.Margin = new Thickness(0, 4, 0, 0);
+        left.Children.Add(statusText);
+        grid.Children.Add(left);
+
+        var right = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        statusPill.CornerRadius = new CornerRadius(999);
+        statusPill.Padding = new Thickness(12, 7, 12, 7);
+        statusPill.Margin = new Thickness(0, 0, 10, 0);
+        statusPill.Child = statusPillText;
+        statusPillText.FontWeight = FontWeights.SemiBold;
+        statusPillText.FontSize = 13;
+        right.Children.Add(statusPill);
+
+        var parent = new Button
+        {
+            Content = "Parent Settings",
+            Tag = "Primary",
+            MinWidth = 136
+        };
+        parent.Click += async (_,__) => await OpenParentSettingsAsync();
+        right.Children.Add(parent);
+
+        Grid.SetColumn(right, 1);
+        grid.Children.Add(right);
+        card.Child = grid;
+        return card;
+    }
+
+    static UIElement SectionHeader(string title, string subtitle)
+    {
+        var panel = new StackPanel();
+        panel.Children.Add(new TextBlock
+        {
+            Text = title,
+            FontSize = 20,
+            FontWeight = FontWeights.SemiBold
+        });
+        panel.Children.Add(new TextBlock
+        {
+            Text = subtitle,
+            FontSize = 13,
+            Foreground = Brush("TextSecondary"),
+            Margin = new Thickness(0, 3, 0, 0)
+        });
+        return panel;
+    }
+
+    static Border Card()
+    {
+        return new Border
+        {
+            Background = Brush("CardBackground"),
+            BorderBrush = Brush("ControlBorder"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(16),
+            Effect = new DropShadowEffect
+            {
+                BlurRadius = 18,
+                ShadowDepth = 2,
+                Opacity = 0.055,
+                Color = Colors.Black
+            }
+        };
+    }
+
+    static Brush Brush(string key)
+        => Application.Current.TryFindResource(key) as Brush ?? Brushes.Transparent;
 
     async Task RefreshAsync()
     {
@@ -60,61 +164,225 @@ public sealed class MainWindow : Window
             var r = await agent.SendAsync(new AgentRequest { Type = "status" });
             if (!r.Ok || r.Status is null) throw new InvalidOperationException(r.Error ?? "No status.");
             status = r.Status;
-            // Only apply the proxy after the agent is confirmed reachable and enforcing filtering.
+
+            // Only change this user's proxy after the background agent is confirmed reachable.
             if (status.Enabled) ProxySettings.Enable();
             else ProxySettings.Disable();
-            statusText.Text = status.Enabled ? "Internet is limited to approved access" : "HomeFocus is currently unlocked";
+
+            statusText.Text = status.Enabled
+                ? "Internet is limited to approved access and earned time."
+                : "Filtering is currently off.";
+            SetStatusPill(status.Enabled ? "Protected" : "Filtering off", status.Enabled ? "success" : "neutral");
             Render();
-            if (!status.PinConfigured) await InitializePinAsync();
+
+            if (!status.PinConfigured)
+                await InitializePinAsync();
         }
         catch (Exception ex)
         {
             status = null;
-            statusText.Text = "HomeFocus Agent unavailable. Verify that HomeFocus Agent is running.";
+            statusText.Text = "The HomeFocus background agent is unavailable.";
+            SetStatusPill("Agent offline", "danger");
             grantsPanel.Children.Clear();
             tasksPanel.Children.Clear();
-            tasksPanel.Children.Add(new TextBlock { Text = ex.Message, Foreground = Brushes.DarkRed, TextWrapping = TextWrapping.Wrap });
+            tasksPanel.Children.Add(InfoCard(
+                "HomeFocus needs attention",
+                "The background agent did not answer. Filtering should not be enabled until this is fixed.\n\n" + ex.Message,
+                "danger"));
         }
         finally { refreshing = false; }
+    }
+
+    void SetStatusPill(string text, string tone)
+    {
+        statusPillText.Text = text;
+        switch (tone)
+        {
+            case "success":
+                statusPill.Background = new SolidColorBrush(Color.FromRgb(232, 246, 235));
+                statusPillText.Foreground = Brush("SuccessBrush");
+                break;
+            case "danger":
+                statusPill.Background = new SolidColorBrush(Color.FromRgb(254, 236, 234));
+                statusPillText.Foreground = Brush("DangerBrush");
+                break;
+            default:
+                statusPill.Background = Brush("SubtleBrush");
+                statusPillText.Foreground = Brush("TextSecondary");
+                break;
+        }
     }
 
     void Render()
     {
         if (status is null) return;
+
         grantsPanel.Children.Clear();
         if (status.ActiveGrants.Count == 0)
-            grantsPanel.Children.Add(new TextBlock { Text = "No earned access is active.", Foreground = Brushes.Gray });
-        foreach (var g in status.ActiveGrants)
         {
-            var task = status.Tasks.Select(x => x.Task).FirstOrDefault(x => x.Id == g.SourceTaskId);
-            var remain = g.ExpiresAt - DateTimeOffset.Now; if (remain < TimeSpan.Zero) remain = TimeSpan.Zero;
-            var row = new Border { Background = Brushes.White, CornerRadius = new CornerRadius(10), Padding = new Thickness(14), Margin = new Thickness(0,0,0,8) };
-            var grid = new Grid(); grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var left = new StackPanel();
-            left.Children.Add(new TextBlock { Text = task?.Name ?? "Earned access", FontWeight = FontWeights.SemiBold, FontSize = 15 });
-            left.Children.Add(new TextBlock { Text = $"{Math.Ceiling(remain.TotalMinutes)} min remaining", Foreground = Brushes.DimGray }); grid.Children.Add(left);
-            var end = new Button { Content = "End", Padding = new Thickness(12,5,12,5), Tag = g.Id };
-            end.Click += async (s,__) => { if (s is Button b && b.Tag is string id) await agent.SendAsync(new AgentRequest { Type="endGrant", GrantId=id }); };
-            Grid.SetColumn(end,1); grid.Children.Add(end); row.Child = grid; grantsPanel.Children.Add(row);
+            grantsPanel.Children.Add(InfoCard(
+                "No earned access is active",
+                "Complete one of the tasks below when you want recreational access.",
+                "neutral"));
+        }
+        else
+        {
+            foreach (var grant in status.ActiveGrants)
+                grantsPanel.Children.Add(GrantCard(grant));
         }
 
         tasksPanel.Children.Clear();
-        foreach (var ta in status.Tasks)
+        if (status.Tasks.Count == 0)
         {
-            var card = new Border { Background = Brushes.White, CornerRadius = new CornerRadius(12), Padding = new Thickness(16), Margin = new Thickness(0,0,0,10) };
-            var grid = new Grid(); grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var left = new StackPanel();
-            left.Children.Add(new TextBlock { Text = ta.Task.Name, FontSize = 17, FontWeight = FontWeights.SemiBold });
-            left.Children.Add(new TextBlock { Text = $"Earn {ta.Task.RewardMinutes} min · {DescribeTask(ta.Task)}", Foreground = Brushes.DimGray, Margin = new Thickness(0,3,0,0) });
-            if (!ta.Available) left.Children.Add(new TextBlock { Text = ta.Reason, Foreground = Brushes.DarkOrange, Margin = new Thickness(0,3,0,0) });
-            grid.Children.Add(left);
-            var go = new Button { Content = "Start", Padding = new Thickness(18,8,18,8), IsEnabled = ta.Available, Tag = ta.Task };
-            go.Click += (_,__) => { if (go.Tag is TaskDefinition task) StartTask(task); };
-            Grid.SetColumn(go,1); grid.Children.Add(go); card.Child=grid; tasksPanel.Children.Add(card);
+            tasksPanel.Children.Add(InfoCard(
+                "No tasks configured",
+                "A parent can add Ice or Typing tasks in Parent Settings.",
+                "neutral"));
+            return;
         }
+
+        foreach (var availability in status.Tasks)
+            tasksPanel.Children.Add(TaskCard(availability));
     }
 
-    static string DescribeTask(TaskDefinition t) => t.Kind == TaskKind.Ice ? $"{t.IceClicks} clicks" : $"{t.PassagesRequired} passage{(t.PassagesRequired==1?"":"s")}";
+    Border GrantCard(AccessGrant grant)
+    {
+        var task = status?.Tasks.Select(x => x.Task).FirstOrDefault(x => x.Id == grant.SourceTaskId);
+        var remain = grant.ExpiresAt - DateTimeOffset.Now;
+        if (remain < TimeSpan.Zero) remain = TimeSpan.Zero;
+
+        var card = Card();
+        card.Padding = new Thickness(18);
+        card.Margin = new Thickness(0, 0, 0, 10);
+
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var left = new StackPanel();
+        left.Children.Add(new TextBlock
+        {
+            Text = task?.Name ?? "Earned access",
+            FontSize = 16,
+            FontWeight = FontWeights.SemiBold
+        });
+        left.Children.Add(new TextBlock
+        {
+            Text = RemainingText(remain),
+            Foreground = Brush("TextSecondary"),
+            FontSize = 13,
+            Margin = new Thickness(0, 4, 0, 0)
+        });
+        grid.Children.Add(left);
+
+        var end = new Button
+        {
+            Content = "End access",
+            Tag = "Danger",
+            MinWidth = 104,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        end.Click += async (_,__) =>
+        {
+            await agent.SendAsync(new AgentRequest { Type = "endGrant", GrantId = grant.Id });
+            await RefreshAsync();
+        };
+        Grid.SetColumn(end, 1);
+        grid.Children.Add(end);
+        card.Child = grid;
+        return card;
+    }
+
+    Border TaskCard(TaskAvailability availability)
+    {
+        var task = availability.Task;
+        var card = Card();
+        card.Padding = new Thickness(18);
+        card.Margin = new Thickness(0, 0, 0, 10);
+
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var left = new StackPanel();
+        left.Children.Add(new TextBlock
+        {
+            Text = task.Name,
+            FontSize = 17,
+            FontWeight = FontWeights.SemiBold
+        });
+
+        left.Children.Add(new TextBlock
+        {
+            Text = $"Earn {task.RewardMinutes} minutes  ·  {DescribeTask(task)}",
+            Foreground = Brush("TextSecondary"),
+            FontSize = 13,
+            Margin = new Thickness(0, 4, 0, 0)
+        });
+
+        if (!availability.Available)
+        {
+            left.Children.Add(new TextBlock
+            {
+                Text = availability.Reason,
+                Foreground = Brush("WarningBrush"),
+                FontSize = 12,
+                Margin = new Thickness(0, 6, 0, 0)
+            });
+        }
+        grid.Children.Add(left);
+
+        var start = new Button
+        {
+            Content = availability.Available ? "Start" : "Unavailable",
+            Tag = availability.Available ? "Primary" : null,
+            MinWidth = 106,
+            IsEnabled = availability.Available,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        start.Click += (_,__) => StartTask(task);
+        Grid.SetColumn(start, 1);
+        grid.Children.Add(start);
+
+        card.Child = grid;
+        return card;
+    }
+
+    static Border InfoCard(string title, string message, string tone)
+    {
+        var card = Card();
+        card.Padding = new Thickness(18);
+        var panel = new StackPanel();
+        panel.Children.Add(new TextBlock
+        {
+            Text = title,
+            FontSize = 15,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = tone == "danger" ? Brush("DangerBrush") : Brush("TextPrimary")
+        });
+        panel.Children.Add(new TextBlock
+        {
+            Text = message,
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = Brush("TextSecondary"),
+            FontSize = 13,
+            Margin = new Thickness(0, 4, 0, 0)
+        });
+        card.Child = panel;
+        return card;
+    }
+
+    static string RemainingText(TimeSpan remaining)
+    {
+        if (remaining.TotalHours >= 1)
+            return $"{(int)remaining.TotalHours}h {remaining.Minutes}m remaining";
+        return $"{Math.Max(0, (int)Math.Ceiling(remaining.TotalMinutes))} min remaining";
+    }
+
+    static string DescribeTask(TaskDefinition task)
+        => task.Kind == TaskKind.Ice
+            ? $"{task.IceClicks} ice clicks"
+            : $"{task.PassagesRequired} passage{(task.PassagesRequired == 1 ? "" : "s")}";
 
     void StartTask(TaskDefinition task)
     {
@@ -130,11 +398,16 @@ public sealed class MainWindow : Window
         parentPinPromptOpen = true;
         try
         {
-            var dialog = new PromptWindow("Set Parent PIN", "Create a 4–12 digit parent PIN. This protects HomeFocus settings.") { Owner = this };
+            var dialog = new PromptWindow(
+                "Set Parent PIN",
+                "Create a 4–12 digit parent PIN. This protects HomeFocus settings.") { Owner = this };
+
             if (dialog.ShowDialog() != true) return;
             var r = await agent.SendAsync(new AgentRequest { Type = "initializePin", Pin = dialog.Value });
-            if (!r.Ok) MessageBox.Show(this, r.Error ?? "Could not set PIN.", "HomeFocus", MessageBoxButton.OK, MessageBoxImage.Error);
-            else if (status is not null) status.PinConfigured = true;
+            if (!r.Ok)
+                MessageBox.Show(this, r.Error ?? "Could not set PIN.", "HomeFocus", MessageBoxButton.OK, MessageBoxImage.Error);
+            else if (status is not null)
+                status.PinConfigured = true;
         }
         catch (Exception ex)
         {
@@ -148,7 +421,9 @@ public sealed class MainWindow : Window
         try
         {
             var rStatus = await agent.SendAsync(new AgentRequest { Type = "status" });
-            if (!rStatus.Ok || rStatus.Status is null) throw new InvalidOperationException(rStatus.Error ?? "Agent did not respond.");
+            if (!rStatus.Ok || rStatus.Status is null)
+                throw new InvalidOperationException(rStatus.Error ?? "Agent did not respond.");
+
             status = rStatus.Status;
             if (!status.PinConfigured)
             {
@@ -158,18 +433,27 @@ public sealed class MainWindow : Window
 
             var prompt = new PromptWindow("Parent Settings", "Enter the parent PIN.") { Owner = this };
             if (prompt.ShowDialog() != true) return;
+
             var r = await agent.SendAsync(new AgentRequest { Type = "getConfig", Pin = prompt.Value });
-            if (!r.Ok || r.Config is null) { MessageBox.Show(this, r.Error ?? "Incorrect PIN."); return; }
-            var w = new ParentSettingsWindow(agent, r.Config, prompt.Value) { Owner = this };
-            w.ShowDialog();
+            if (!r.Ok || r.Config is null)
+            {
+                MessageBox.Show(this, r.Error ?? "Incorrect PIN.", "HomeFocus", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var window = new ParentSettingsWindow(agent, r.Config, prompt.Value) { Owner = this };
+            window.ShowDialog();
             await RefreshAsync();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this,
+            MessageBox.Show(
+                this,
                 "HomeFocus Agent could not be reached. Parent Settings requires the background agent.\n\n" +
                 "Try restarting the computer or reinstalling HomeFocus.\n\nDetails: " + ex.Message,
-                "HomeFocus connection error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                "HomeFocus connection error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
         }
     }
 }

@@ -1,5 +1,8 @@
 # HomeFocus for Windows
 
+**1.0.4 preview:** refreshed UI with the same light, rounded-card feel as the macOS HomeFocus app. The 1.0.3 scripture/reward-reference repair is preserved.
+
+
 HomeFocus for Windows is a parent-controlled **default-deny internet access system** designed around earned access rather than a simple website blacklist.
 
 It is intended for a dedicated child Windows 10/11 PC or a machine where the parent understands that enabling HomeFocus affects networking for the whole computer. **On new installations, filtering initially starts OFF** until a parent creates a PIN, reviews the whitelist, and enables it. Upgrading preserves existing settings.
@@ -170,7 +173,7 @@ This publishes self-contained single-file executables into `dist/`:
 
 and creates `HomeFocus-Windows-1.0.0.zip` plus `update-manifest.json`.
 
-To create the graphical installer after building, run `./tools/Build-Installer.ps1 -Version 1.0.3`. Manual PowerShell installation (without the graphical installer) remains available:
+To create the graphical installer after building, run `./tools/Build-Installer.ps1 -Version 1.0.4`. Manual PowerShell installation (without the graphical installer) remains available:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
@@ -210,7 +213,7 @@ MIDI piano support is relatively straightforward; monophonic cello pitch recogni
 
 ## Troubleshooting the agent
 
-If the app says the background agent is unavailable, **do not enable filtering**. The 1.0.3 installer verifies that the agent starts and responds on localhost port 48191. To diagnose failures, open an administrator PowerShell and check:
+If the app says the background agent is unavailable, **do not enable filtering**. The 1.0.4 installer verifies that the agent starts and responds on localhost port 48191. To diagnose failures, open an administrator PowerShell and check:
 
 ```powershell
 Get-ScheduledTask -TaskName "HomeFocus Agent" | Get-ScheduledTaskInfo
