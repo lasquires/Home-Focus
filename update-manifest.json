@@ -1,0 +1,6 @@
+{
+  "version": "1.0.0",
+  "packageUrl": "https://github.com/lasquires/Home-Focus/releases/download/v1.0.0/HomeFocus-Windows-1.0.0.zip",
+  "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "notes": "Current baseline. Release workflow replaces this manifest for future versions."
+}
