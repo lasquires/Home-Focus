@@ -1,6 +1,6 @@
 {
-  "version": "1.0.3",
-  "packageUrl": "https://github.com/lasquires/Home-Focus/releases/download/v1.0.3/HomeFocus-Windows-1.0.3.zip",
-  "sha256": "17ffd74aed49fff4810c249ea81f7353248a35f59a9ab005a69bb7daa531cf5b",
+  "version": "1.0.4",
+  "packageUrl": "https://github.com/lasquires/Home-Focus/releases/download/v1.0.4/HomeFocus-Windows-1.0.4.zip",
+  "sha256": "62485054f7d89bd23f7f79cd779b4fa6b0339e7df8171e60d272ecdbf89f1b81",
   "notes": "Built from HomeFocus Windows source."
 }
