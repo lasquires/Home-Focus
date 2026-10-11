@@ -229,6 +229,13 @@ public static class JsonDefaults
         PropertyNameCaseInsensitive = true,
         Converters = { new JsonStringEnumConverter() }
     };
+
+    // Network requests and responses are newline-delimited JSON. They must
+    // serialize onto exactly one line, unlike the readable config files.
+    public static readonly JsonSerializerOptions WireOptions = new(Options)
+    {
+        WriteIndented = false
+    };
 }
 
 public static class DomainMatcher

@@ -15,9 +15,9 @@ internal sealed class AgentClient
         using var stream = client.GetStream();
         using var writer = new StreamWriter(stream, new UTF8Encoding(false), 8192, true) { AutoFlush = true };
         using var reader = new StreamReader(stream, Encoding.UTF8, false, 8192, true);
-        await writer.WriteLineAsync(JsonSerializer.Serialize(request, JsonDefaults.Options));
+        await writer.WriteLineAsync(JsonSerializer.Serialize(request, JsonDefaults.WireOptions));
         var line = await reader.ReadLineAsync(ct);
         if (string.IsNullOrWhiteSpace(line)) throw new IOException("HomeFocus Agent did not answer.");
-        return JsonSerializer.Deserialize<AgentResponse>(line, JsonDefaults.Options) ?? throw new IOException("Invalid agent response.");
+        return JsonSerializer.Deserialize<AgentResponse>(line, JsonDefaults.WireOptions) ?? throw new IOException("Invalid agent response.");
     }
 }

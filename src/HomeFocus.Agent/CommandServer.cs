@@ -43,11 +43,11 @@ internal sealed class CommandServer
         {
             var line = await reader.ReadLineAsync(ct);
             if (string.IsNullOrWhiteSpace(line)) return;
-            var request = JsonSerializer.Deserialize<AgentRequest>(line, JsonDefaults.Options) ?? new AgentRequest();
+            var request = JsonSerializer.Deserialize<AgentRequest>(line, JsonDefaults.WireOptions) ?? new AgentRequest();
             response = await DispatchAsync(request, ct);
         }
         catch (Exception ex) { response = new AgentResponse { Ok = false, Error = ex.Message }; }
-        await writer.WriteLineAsync(JsonSerializer.Serialize(response, JsonDefaults.Options));
+        await writer.WriteLineAsync(JsonSerializer.Serialize(response, JsonDefaults.WireOptions));
     }
 
     async Task<AgentResponse> DispatchAsync(AgentRequest req, CancellationToken ct)
