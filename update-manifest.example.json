@@ -1,0 +1,6 @@
+{
+  "version": "1.0.1",
+  "packageUrl": "https://github.com/lasquires/Home-Focus/releases/download/v1.0.1/HomeFocus-Windows-1.0.1.zip",
+  "sha256": "REPLACE_WITH_SHA256_FROM_BUILD_RELEASE_PS1",
+  "notes": "Example manifest. Commit your real update-manifest.json to main."
+}
