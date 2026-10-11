@@ -1,0 +1,18 @@
+# .NET build output
+**/bin/
+**/obj/
+dist/
+.stage/
+
+# Release packages generated locally
+HomeFocus-Windows-*.zip
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# OS/editor noise
+Thumbs.db
+.DS_Store
